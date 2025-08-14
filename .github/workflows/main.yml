@@ -2,9 +2,6 @@ name: Build Static QEMU on ARM
 
 on:
   push:
-    tags:
-      - 'v*'  # 触发条件：推送标签时运行（例如 v1.0.0）
-
 jobs:
   build:
     runs-on: ubuntu-latest  # GitHub 提供的 ARM 实例

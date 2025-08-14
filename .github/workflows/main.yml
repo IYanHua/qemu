@@ -1,0 +1,62 @@
+name: Build Static QEMU on ARM
+
+on:
+  push:
+    tags:
+      - 'v*'  # 触发条件：推送标签时运行（例如 v1.0.0）
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # GitHub 提供的 ARM 实例
+    strategy:
+      matrix:
+        target: ["x86_64-softmmu", "aarch64-softmmu"]  # 要构建的目标架构
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive  # QEMU 需要子模块
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential git ninja-build \
+            pkg-config libglib2.0-dev libpixman-1-dev \
+            libslirp-dev libfdt-dev zlib1g-dev \
+            python3-setuptools
+
+    - name: Configure QEMU (Static Build)
+      run: |
+        mkdir build
+        cd build
+        ../configure \
+            --target-list=${{ matrix.target }} \
+            --enable-static \
+            --disable-pie \
+            --prefix=/opt/qemu-static \
+            --disable-docs \
+            --disable-gtk \
+            --disable-sdl \
+            --disable-vnc \
+            --extra-ldflags="-static -Wl,--no-warn-rwx-segments"
+
+    - name: Build QEMU
+      run: |
+        cd build
+        make -j$(nproc)
+        sudo make install
+
+    - name: Pack binaries
+      run: |
+        mkdir -p qemu-static/bin
+        cp /opt/qemu-static/bin/qemu-system-* qemu-static/bin/
+        tar -czvf qemu-static-${{ matrix.target }}.tar.gz qemu-static
+
+    - name: Upload to GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          qemu-static-${{ matrix.target }}.tar.gz
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 自动使用 GitHub Token

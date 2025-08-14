@@ -29,13 +29,13 @@ jobs:
         cd build
         ../configure \
             --target-list=${{ matrix.target }} \
-            --enable-static \
+            --static \
             --disable-pie \
             --prefix=/opt/qemu-static \
             --disable-docs \
             --disable-gtk \
             --disable-sdl \
-            --disable-vnc \
+            --enable-vnc \
             --extra-ldflags="-static -Wl,--no-warn-rwx-segments"
 
     - name: Build QEMU
